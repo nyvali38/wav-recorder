@@ -22,8 +22,9 @@
       --radius: 18px;
       --shadow: 0 10px 28px rgba(0,0,0,.06);
       --font: 'Be Vietnam Pro', Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --icon: #393731;
+      --icon-accent: #f6b10a;
     }
-
     [data-theme="dark"] {
       --bg: #131311;
       --card: #1b1b19;
@@ -36,8 +37,9 @@
       --danger: #ef6c98;
       --ok: #87c487;
       --shadow: 0 10px 28px rgba(0,0,0,.28);
+      --icon: #e6e3da;
+      --icon-accent: #ffe08a;
     }
-
     * { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; }
     body {
@@ -49,11 +51,10 @@
       -webkit-font-smoothing: antialiased;
       text-rendering: optimizeLegibility;
     }
-
     button, input, select, textarea { font: inherit; }
 
     .wrap {
-      width: min(100%, 540px);
+      width: min(100%, 560px);
       margin: 0 auto;
       padding: 14px 12px 26px;
     }
@@ -64,13 +65,11 @@
       gap: 10px;
       margin-bottom: 12px;
     }
-
     .toolbar-group {
       display: flex;
       gap: 10px;
       flex-wrap: wrap;
     }
-
     .tool-btn {
       min-height: 42px;
       padding: 0 14px;
@@ -79,6 +78,15 @@
       background: var(--card);
       color: var(--text);
       cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .tool-icon {
+      width: 18px;
+      height: 18px;
+      flex: 0 0 auto;
+      color: var(--icon);
     }
 
     .card {
@@ -88,19 +96,16 @@
       box-shadow: var(--shadow);
       padding: 18px;
     }
-
     .hero {
       text-align: center;
       margin-bottom: 12px;
     }
-
     h1 {
       margin: 0 0 8px;
       font-size: clamp(28px, 6vw, 36px);
       line-height: 1.15;
       font-weight: 700;
     }
-
     .sub {
       margin: 0;
       color: var(--muted);
@@ -118,7 +123,6 @@
       font-weight: 700;
       color: var(--muted);
     }
-
     .dot {
       width: 10px;
       height: 10px;
@@ -126,7 +130,6 @@
       background: #bdb8af;
       flex: 0 0 auto;
     }
-
     .status.recording { color: var(--danger); }
     .status.recording .dot { background: var(--danger); }
     .status.ready { color: var(--ok); }
@@ -141,14 +144,12 @@
       margin: 18px 0 10px;
       font-variant-numeric: tabular-nums;
     }
-
     .hint {
       margin: 0 0 16px;
       color: var(--muted);
       text-align: center;
       font-size: 15px;
     }
-
     .meter {
       width: 100%;
       height: 10px;
@@ -158,7 +159,6 @@
       margin-bottom: 16px;
       border: 1px solid var(--line);
     }
-
     .meter-fill {
       width: 6%;
       height: 100%;
@@ -177,20 +177,28 @@
       font-size: 18px;
       font-weight: 700;
       cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
     }
-
+    .main-action-icon {
+      width: 22px;
+      height: 22px;
+      flex: 0 0 auto;
+      color: #fff;
+    }
     .main-action:hover { background: var(--primary-hover); }
     .main-action.stop { background: var(--danger); }
 
-    .secondary-row {
+    .action-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr;
       gap: 10px;
-      margin-top: 10px;
+      margin-top: 12px;
     }
-
     .ghost {
-      min-height: 48px;
+      min-height: 50px;
       border-radius: 14px;
       border: 1px solid var(--line);
       background: var(--card);
@@ -198,6 +206,19 @@
       font-size: 15px;
       font-weight: 600;
       cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .ghost.primary-alt {
+      background: var(--soft);
+    }
+    .ghost-icon {
+      width: 20px;
+      height: 20px;
+      flex: 0 0 auto;
+      color: var(--icon);
     }
 
     .main-action:disabled,
@@ -214,14 +235,12 @@
       border: 1px dashed var(--line);
       background: var(--soft);
     }
-
     .file-title {
       margin: 0 0 4px;
       font-size: 15px;
       font-weight: 700;
       word-break: break-word;
     }
-
     .file-meta {
       margin: 0;
       font-size: 14px;
@@ -233,9 +252,12 @@
       margin-top: 12px;
     }
 
-    .note {
-      margin-top: 14px;
-      text-align: center;
+    .support-note {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: var(--soft);
+      border: 1px solid var(--line);
       color: var(--muted);
       font-size: 14px;
     }
@@ -254,10 +276,9 @@
     }
 
     @media (max-width: 420px) {
-      .secondary-row { grid-template-columns: 1fr; }
       .toolbar { flex-direction: column; }
       .toolbar-group { justify-content: center; }
-      .tool-btn { width: 100%; }
+      .tool-btn { width: 100%; justify-content: center; }
     }
   </style>
 </head>
@@ -265,17 +286,33 @@
   <main class="wrap">
     <div class="toolbar">
       <div class="toolbar-group">
-        <button id="langBtn" class="tool-btn" type="button" aria-label="Switch language">EN</button>
+        <button id="langBtn" class="tool-btn" type="button" aria-label="Switch language">
+          <span class="tool-icon">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+              <path d="M4 5h9M4 10h9M4 15h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M15 19l3.2-8H22l-3.2 8h-1.6Zm0 0l-4-8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <span>EN</span>
+        </button>
       </div>
       <div class="toolbar-group">
-        <button id="themeBtn" class="tool-btn" type="button" aria-label="Chuyển giao diện">🌙</button>
+        <button id="themeBtn" class="tool-btn" type="button" aria-label="Toggle theme">
+          <span class="tool-icon" id="themeIcon">
+            <!-- theme icon will be injected by JS -->
+          </span>
+          <span id="themeLabel">Dark</span>
+        </button>
       </div>
     </div>
 
     <section class="card hero">
       <h1 data-i18n="title">Ghi âm WAV</h1>
-      <p class="sub" data-i18n="subtitle">Bấm ghi âm, nói xong thì dừng và tải file xuống.</p>
-      <div id="status" class="status"><span class="dot"></span><span id="statusText">Sẵn sàng</span></div>
+      <p class="sub" data-i18n="subtitle">Bấm ghi âm, nói xong thì dừng rồi chia sẻ hoặc lưu file.</p>
+      <div id="status" class="status">
+        <span class="dot"></span>
+        <span id="statusText">Sẵn sàng</span>
+      </div>
     </section>
 
     <section class="card">
@@ -283,11 +320,58 @@
       <p id="hint" class="hint">Cho phép dùng microphone khi trình duyệt hỏi.</p>
       <div class="meter" aria-hidden="true"><div id="meterFill" class="meter-fill"></div></div>
 
-      <button id="mainBtn" class="main-action" type="button">Bắt đầu ghi âm</button>
+      <button id="mainBtn" class="main-action" type="button">
+        <span class="main-action-icon">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+            <path d="M12 3a3 3 0 0 0-3 3v5a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z" fill="currentColor"/>
+            <path d="M7 11a5 5 0 0 0 10 0M12 16v3M8 19h8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span id="mainBtnText">Bắt đầu ghi âm</span>
+      </button>
 
-      <div class="secondary-row">
-        <button id="downloadBtn" class="ghost" type="button" disabled>Tải file WAV</button>
-        <button id="resetBtn" class="ghost" type="button" disabled>Xóa bản ghi</button>
+      <div class="action-grid">
+        <button id="shareBtn" class="ghost primary-alt" type="button" disabled>
+          <span class="ghost-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+              <path d="M18 8a3 3 0 1 0-2.83-4h-.34A3 3 0 1 0 9 7.5v.9A3 3 0 1 0 9.83 17h.34A3 3 0 1 0 18 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M10 8.5 14 6M10 15.5l4-2.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <span>Share / Gửi file</span>
+        </button>
+
+        <button id="saveAsBtn" class="ghost" type="button" disabled>
+          <span class="ghost-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+              <path d="M6 4h9l3 3v11H6Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+              <path d="M9 4v5h5V4" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+              <path d="M9 18h6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <span>Lưu với tên khác</span>
+        </button>
+
+        <button id="downloadBtn" class="ghost" type="button" disabled>
+          <span class="ghost-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+              <path d="M12 4v9M8 11l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M6 18h12" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <span>Tải file WAV</span>
+        </button>
+
+        <button id="resetBtn" class="ghost" type="button" disabled>
+          <span class="ghost-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+              <path d="M6 6h12l-1 13H7Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+              <path d="M10 10v6M14 10v6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+              <path d="M9 6V4h6v2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <span>Xóa bản ghi</span>
+        </button>
       </div>
 
       <div class="file-box">
@@ -296,7 +380,9 @@
         <audio id="player" controls hidden></audio>
       </div>
 
-      <p class="note" data-i18n="note">Dùng tốt trên điện thoại và máy tính.</p>
+      <div id="supportNote" class="support-note">
+        Trên điện thoại, nên bấm Share để gửi qua app khác. Trên máy tính, bạn có thể dùng Lưu với tên khác nếu trình duyệt hỗ trợ.
+      </div>
     </section>
 
     <footer>Design by Chinh Anh from Rhema</footer>
@@ -306,7 +392,12 @@
     const html = document.documentElement;
     const langBtn = document.getElementById('langBtn');
     const themeBtn = document.getElementById('themeBtn');
+    const themeIcon = document.getElementById('themeIcon');
+    const themeLabel = document.getElementById('themeLabel');
     const mainBtn = document.getElementById('mainBtn');
+    const mainBtnText = document.getElementById('mainBtnText');
+    const shareBtn = document.getElementById('shareBtn');
+    const saveAsBtn = document.getElementById('saveAsBtn');
     const downloadBtn = document.getElementById('downloadBtn');
     const resetBtn = document.getElementById('resetBtn');
     const timerEl = document.getElementById('timer');
@@ -317,12 +408,12 @@
     const meterFill = document.getElementById('meterFill');
     const statusEl = document.getElementById('status');
     const statusText = document.getElementById('statusText');
+    const supportNote = document.getElementById('supportNote');
 
     const dict = {
       vi: {
         title: 'Ghi âm WAV',
-        subtitle: 'Bấm ghi âm, nói xong thì dừng và tải file xuống.',
-        note: 'Dùng tốt trên điện thoại và máy tính.',
+        subtitle: 'Bấm ghi âm, nói xong thì dừng rồi chia sẻ hoặc lưu file.',
         statusReady: 'Sẵn sàng',
         statusRecording: 'Đang ghi âm',
         statusDone: 'Đã ghi xong',
@@ -331,25 +422,34 @@
         hintIdle: 'Cho phép dùng microphone khi trình duyệt hỏi.',
         hintAsking: 'Đang xin quyền microphone...',
         hintRecording: 'Nói xong thì bấm Dừng ghi âm.',
-        hintDone: 'Bạn có thể nghe lại hoặc tải file xuống.',
+        hintDone: 'Bạn có thể nghe lại, chia sẻ hoặc lưu file.',
         hintDownloaded: 'File WAV đang được tải xuống máy của bạn.',
+        hintSaved: 'File đã được lưu theo tên và vị trí bạn đã chọn.',
+        hintShared: 'Đã mở bảng chia sẻ của thiết bị.',
+        hintShareUnsupported: 'Thiết bị hoặc trình duyệt này chưa hỗ trợ chia sẻ file trực tiếp. Hãy dùng Tải file hoặc Lưu với tên khác.',
+        hintSaveUnsupported: 'Trình duyệt này chưa hỗ trợ chọn vị trí lưu file. Hãy dùng Tải file WAV.',
         hintReset: 'Bấm ghi âm để bắt đầu bản ghi mới.',
         hintNoData: 'Không có dữ liệu âm thanh. Hãy thử ghi lại.',
         hintError: 'Không mở được microphone. Hãy kiểm tra quyền truy cập rồi thử lại.',
         hintUnsupported: 'Trình duyệt này chưa hỗ trợ ghi âm web đầy đủ. Hãy dùng Chrome, Edge hoặc Safari mới.',
+        hintShareCanceled: 'Bạn đã đóng bảng chia sẻ mà chưa gửi file.',
         mainStart: 'Bắt đầu ghi âm',
         mainStop: 'Dừng ghi âm',
         mainAgain: 'Ghi âm lại',
+        share: 'Share / Gửi file',
+        saveAs: 'Lưu với tên khác',
         download: 'Tải file WAV',
         reset: 'Xóa bản ghi',
         noFile: 'Chưa có bản ghi',
         noFileMeta: 'Sau khi dừng ghi, file sẽ hiện ở đây.',
-        fileMetaSuffix: 'WAV mono'
+        fileMetaSuffix: 'WAV mono',
+        support: 'Trên điện thoại, nên bấm Share để gửi qua app khác. Trên máy tính, bạn có thể dùng Lưu với tên khác nếu trình duyệt hỗ trợ.',
+        themeDark: 'Dark',
+        themeLight: 'Light'
       },
       en: {
         title: 'WAV Recorder',
-        subtitle: 'Tap record, finish speaking, then stop and download the file.',
-        note: 'Works well on phone and desktop.',
+        subtitle: 'Tap record, finish speaking, then share or save the file.',
         statusReady: 'Ready',
         statusRecording: 'Recording',
         statusDone: 'Done',
@@ -358,20 +458,30 @@
         hintIdle: 'Allow microphone access when your browser asks.',
         hintAsking: 'Requesting microphone access...',
         hintRecording: 'When you finish speaking, tap Stop recording.',
-        hintDone: 'You can listen again or download the file.',
+        hintDone: 'You can listen again, share, or save the file.',
         hintDownloaded: 'Your WAV file is being downloaded.',
+        hintSaved: 'The file has been saved with your chosen name and location.',
+        hintShared: 'The device share sheet has been opened.',
+        hintShareUnsupported: 'This device or browser cannot share files directly. Please use Download or Save As.',
+        hintSaveUnsupported: 'This browser does not support choosing a save location. Please use Download WAV.',
         hintReset: 'Tap record to start a new recording.',
         hintNoData: 'No audio data was captured. Please try again.',
         hintError: 'Microphone access failed. Please check permission and try again.',
         hintUnsupported: 'This browser does not fully support web recording. Please use a recent Chrome, Edge, or Safari.',
+        hintShareCanceled: 'You closed the share sheet before sending the file.',
         mainStart: 'Start recording',
         mainStop: 'Stop recording',
         mainAgain: 'Record again',
+        share: 'Share / Send file',
+        saveAs: 'Save as',
         download: 'Download WAV',
         reset: 'Delete recording',
         noFile: 'No recording yet',
         noFileMeta: 'Your file will appear here after you stop recording.',
-        fileMetaSuffix: 'mono WAV'
+        fileMetaSuffix: 'mono WAV',
+        support: 'On phones, use Share to send the file to another app. On desktop, use Save As if your browser supports it.',
+        themeDark: 'Dark',
+        themeLight: 'Light'
       }
     };
 
@@ -396,39 +506,42 @@
 
     const t = (key) => dict[lang][key] || key;
 
+    function renderThemeIcon() {
+      const dark = html.getAttribute('data-theme') === 'dark';
+      themeIcon.innerHTML = dark
+        ? '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="4.5" fill="none" stroke="var(--icon-accent)" stroke-width="1.7"/><path d="M12 4v-2M12 22v-2M4 12H2M22 12h-2M5.6 5.6 4.2 4.2M18.4 18.4l1.4 1.4M5.6 18.4 4.2 19.8M18.4 5.6l1.4-1.4" stroke="var(--icon-accent)" stroke-width="1.6" stroke-linecap="round"/></svg>'
+        : '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M20 12.5A7.5 7.5 0 0 1 11.5 4 5.5 5.5 0 1 0 20 12.5Z" fill="none" stroke="var(--icon)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      themeLabel.textContent = dark ? t('themeLight') : t('themeDark');
+    }
+
     function renderStaticText() {
       document.querySelectorAll('[data-i18n]').forEach(el => {
         el.textContent = t(el.dataset.i18n);
       });
-      downloadBtn.textContent = t('download');
-      resetBtn.textContent = t('reset');
-      langBtn.textContent = lang === 'vi' ? 'EN' : 'VI';
+      shareBtn.querySelector('span:last-child').textContent = t('share');
+      saveAsBtn.querySelector('span:last-child').textContent = t('saveAs');
+      downloadBtn.querySelector('span:last-child').textContent = t('download');
+      resetBtn.querySelector('span:last-child').textContent = t('reset');
+      supportNote.textContent = t('support');
+      langBtn.querySelector('span:last-child').textContent = lang === 'vi' ? 'EN' : 'VI';
       html.lang = lang;
       updateDynamicText();
-      renderThemeButton();
+      renderThemeIcon();
     }
 
     function updateDynamicText() {
       statusText.textContent = t(currentStatusKey);
       hintEl.textContent = t(currentHintKey);
       if (!recording && !wavBlob) {
-        mainBtn.textContent = t('mainStart');
+        mainBtnText.textContent = t('mainStart');
         fileTitle.textContent = t('noFile');
         fileMeta.textContent = t('noFileMeta');
       }
-      if (!recording && wavBlob && mainBtn.dataset.state !== 'again') {
-        mainBtn.textContent = t('mainStart');
-      }
-      if (mainBtn.dataset.state === 'stop') mainBtn.textContent = t('mainStop');
-      if (mainBtn.dataset.state === 'again') mainBtn.textContent = t('mainAgain');
+      if (mainBtn.dataset.state === 'stop') mainBtnText.textContent = t('mainStop');
+      if (mainBtn.dataset.state === 'again') mainBtnText.textContent = t('mainAgain');
       if (wavBlob && fileMeta.dataset.size) {
         fileMeta.textContent = `${fileMeta.dataset.size} · ${t('fileMetaSuffix')}`;
       }
-    }
-
-    function renderThemeButton() {
-      const dark = html.getAttribute('data-theme') === 'dark';
-      themeBtn.textContent = dark ? '☀️' : '🌙';
     }
 
     function setStatus(type, key) {
@@ -466,6 +579,8 @@
       fileTitle.textContent = t('noFile');
       fileMeta.textContent = t('noFileMeta');
       delete fileMeta.dataset.size;
+      shareBtn.disabled = true;
+      saveAsBtn.disabled = true;
       downloadBtn.disabled = true;
       resetBtn.disabled = true;
       setStatus('', 'statusReady');
@@ -541,6 +656,11 @@
       meterHandle = requestAnimationFrame(monitorLevel);
     }
 
+    function buildShareFile() {
+      if (!wavBlob) return null;
+      return new File([wavBlob], fileName || 'recording.wav', { type: 'audio/wav', lastModified: Date.now() });
+    }
+
     async function startRecording() {
       try {
         clearResult();
@@ -558,8 +678,7 @@
         sourceNode.connect(processorNode);
         processorNode.connect(audioContext.destination);
         processorNode.onaudioprocess = (event) => {
-          if (!recording) return;
-          pcmChunks.push(new Float32Array(event.inputBuffer.getChannelData(0)));
+          if (recording) pcmChunks.push(new Float32Array(event.inputBuffer.getChannelData(0)));
         };
         recording = true;
         startTime = Date.now();
@@ -568,7 +687,7 @@
         monitorLevel();
         mainBtn.dataset.state = 'stop';
         mainBtn.classList.add('stop');
-        mainBtn.textContent = t('mainStop');
+        mainBtnText.textContent = t('mainStop');
         resetBtn.disabled = false;
         setStatus('recording', 'statusRecording');
         setHint('hintRecording');
@@ -587,7 +706,7 @@
       if (!merged.length) {
         setHint('hintNoData');
         mainBtn.dataset.state = 'start';
-        mainBtn.textContent = t('mainStart');
+        mainBtnText.textContent = t('mainStart');
         mainBtn.classList.remove('stop');
         return;
       }
@@ -600,10 +719,12 @@
       fileTitle.textContent = fileName;
       fileMeta.dataset.size = `${(wavBlob.size / 1024).toFixed(1)} KB`;
       fileMeta.textContent = `${fileMeta.dataset.size} · ${t('fileMetaSuffix')}`;
+      shareBtn.disabled = false;
+      saveAsBtn.disabled = false;
       downloadBtn.disabled = false;
       resetBtn.disabled = false;
       mainBtn.dataset.state = 'again';
-      mainBtn.textContent = t('mainAgain');
+      mainBtnText.textContent = t('mainAgain');
       mainBtn.classList.remove('stop');
       setStatus('ready', 'statusDone');
       setHint('hintDone');
@@ -620,7 +741,7 @@
       timerEl.textContent = '00:00';
       setHint('hintReset');
       mainBtn.dataset.state = 'start';
-      mainBtn.textContent = t('mainStart');
+      mainBtnText.textContent = t('mainStart');
       mainBtn.classList.remove('stop');
     }
 
@@ -635,6 +756,47 @@
       setHint('hintDownloaded');
     }
 
+    async function saveAsRecording() {
+      if (!wavBlob) return;
+      if (!window.showSaveFilePicker) {
+        setHint('hintSaveUnsupported');
+        return;
+      }
+      try {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: fileName || 'recording.wav',
+          types: [{ description: 'WAV Audio', accept: { 'audio/wav': ['.wav'] } }]
+        });
+        const writable = await handle.createWritable();
+        await writable.write(wavBlob);
+        await writable.close();
+        setHint('hintSaved');
+      } catch (error) {
+        if (error && error.name !== 'AbortError') setHint('hintSaveUnsupported');
+      }
+    }
+
+    async function shareRecording() {
+      if (!wavBlob) return;
+      const shareFile = buildShareFile();
+      const shareData = {
+        files: [shareFile],
+        title: fileName || 'recording.wav',
+        text: fileName || 'recording.wav'
+      };
+      if (!(navigator.share && navigator.canShare && navigator.canShare(shareData))) {
+        setHint('hintShareUnsupported');
+        return;
+      }
+      try {
+        await navigator.share(shareData);
+        setHint('hintShared');
+      } catch (error) {
+        if (error && error.name === 'AbortError') setHint('hintShareCanceled');
+        else setHint('hintShareUnsupported');
+      }
+    }
+
     langBtn.addEventListener('click', () => {
       lang = lang === 'vi' ? 'en' : 'vi';
       renderStaticText();
@@ -643,7 +805,7 @@
     themeBtn.addEventListener('click', () => {
       const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
       html.setAttribute('data-theme', next);
-      renderThemeButton();
+      renderThemeIcon();
     });
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !(window.AudioContext || window.webkitAudioContext)) {
@@ -654,6 +816,8 @@
 
     mainBtn.dataset.state = 'start';
     mainBtn.addEventListener('click', toggleRecording);
+    shareBtn.addEventListener('click', shareRecording);
+    saveAsBtn.addEventListener('click', saveAsRecording);
     downloadBtn.addEventListener('click', downloadRecording);
     resetBtn.addEventListener('click', resetRecording);
     renderStaticText();
