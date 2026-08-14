@@ -473,6 +473,9 @@
     let mediaStream;
     let sourceNode;
     let processorNode;
+    let recorderMode = '';
+    let recorderFlushResolve = null;
+    let recorderFlushTimer = null;
     let analyser;
     let monitorData;
     let pcmChunks = [];
@@ -605,15 +608,134 @@
       return new Blob([buffer], { type: 'audio/wav' });
     }
 
+    const AUDIO_WORKLET_SOURCE = `
+class PcmRecorderProcessor extends AudioWorkletProcessor {
+  constructor() {
+    super();
+    this.bufferSize = 4096;
+    this.buffer = new Float32Array(this.bufferSize);
+    this.offset = 0;
+    this.active = true;
+    this.port.onmessage = (event) => {
+      if (event.data && event.data.type === 'flush') {
+        this.flush();
+        this.active = false;
+        this.port.postMessage({ type: 'flushed' });
+      }
+    };
+  }
+
+  flush() {
+    if (!this.offset) return;
+    const chunk = this.buffer.slice(0, this.offset);
+    this.port.postMessage({ type: 'data', buffer: chunk.buffer }, [chunk.buffer]);
+    this.buffer = new Float32Array(this.bufferSize);
+    this.offset = 0;
+  }
+
+  process(inputs) {
+    if (!this.active) return true;
+    const input = inputs[0];
+    const channel = input && input[0];
+    if (!channel || !channel.length) return true;
+
+    let sourceOffset = 0;
+    while (sourceOffset < channel.length) {
+      const available = this.bufferSize - this.offset;
+      const count = Math.min(available, channel.length - sourceOffset);
+      this.buffer.set(channel.subarray(sourceOffset, sourceOffset + count), this.offset);
+      this.offset += count;
+      sourceOffset += count;
+
+      if (this.offset === this.bufferSize) {
+        const chunk = this.buffer;
+        this.port.postMessage({ type: 'data', buffer: chunk.buffer }, [chunk.buffer]);
+        this.buffer = new Float32Array(this.bufferSize);
+        this.offset = 0;
+      }
+    }
+    return true;
+  }
+}
+
+registerProcessor('pcm-recorder-processor', PcmRecorderProcessor);
+`;
+
+    function handleWorkletMessage(event) {
+      const message = event.data || {};
+      if (message.type === 'data' && message.buffer) {
+        pcmChunks.push(new Float32Array(message.buffer));
+      } else if (message.type === 'flushed' && recorderFlushResolve) {
+        recorderFlushResolve();
+      }
+    }
+
+    async function createRecorderNode() {
+      if (audioContext.audioWorklet && window.AudioWorkletNode) {
+        let moduleUrl = '';
+        try {
+          moduleUrl = URL.createObjectURL(new Blob([AUDIO_WORKLET_SOURCE], { type: 'text/javascript' }));
+          await audioContext.audioWorklet.addModule(moduleUrl);
+          processorNode = new AudioWorkletNode(audioContext, 'pcm-recorder-processor', {
+            numberOfInputs: 1,
+            numberOfOutputs: 1,
+            outputChannelCount: [1],
+            channelCount: 1
+          });
+          processorNode.port.onmessage = handleWorkletMessage;
+          recorderMode = 'audio-worklet';
+          return;
+        } catch (error) {
+          console.warn('AudioWorklet unavailable; using ScriptProcessor fallback.', error);
+          if (processorNode) processorNode.disconnect();
+          processorNode = null;
+        } finally {
+          if (moduleUrl) URL.revokeObjectURL(moduleUrl);
+        }
+      }
+
+      processorNode = audioContext.createScriptProcessor(4096, 1, 1);
+      processorNode.onaudioprocess = (event) => {
+        if (recording) pcmChunks.push(new Float32Array(event.inputBuffer.getChannelData(0)));
+      };
+      recorderMode = 'script-processor';
+    }
+
+    function flushRecorder() {
+      if (recorderMode !== 'audio-worklet' || !processorNode || !processorNode.port) {
+        return Promise.resolve();
+      }
+
+      return new Promise((resolve) => {
+        const finish = () => {
+          if (recorderFlushResolve !== finish) return;
+          recorderFlushResolve = null;
+          if (recorderFlushTimer) clearTimeout(recorderFlushTimer);
+          recorderFlushTimer = null;
+          resolve();
+        };
+        recorderFlushResolve = finish;
+        recorderFlushTimer = setTimeout(finish, 500);
+        processorNode.port.postMessage({ type: 'flush' });
+      });
+    }
+
     function stopTracks() {
+      if (recorderFlushResolve) recorderFlushResolve();
+      if (processorNode && processorNode.port) processorNode.port.onmessage = null;
       if (processorNode) processorNode.disconnect();
       if (sourceNode) sourceNode.disconnect();
       if (analyser) analyser.disconnect();
       if (mediaStream) mediaStream.getTracks().forEach(track => track.stop());
+      if (audioContext && audioContext.state !== 'closed' && typeof audioContext.close === 'function') {
+        audioContext.close().catch(() => {});
+      }
       processorNode = null;
       sourceNode = null;
       analyser = null;
       mediaStream = null;
+      audioContext = null;
+      recorderMode = '';
     }
 
     function stopVisuals() {
@@ -643,25 +765,26 @@
     }
 
     async function startRecording() {
+      mainBtn.disabled = true;
       try {
         clearResult();
         setHint('hintAsking');
-        mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          audio: { channelCount: 1 }
+        });
+        if (audioContext.state === 'suspended') await audioContext.resume();
         sampleRate = audioContext.sampleRate;
         sourceNode = audioContext.createMediaStreamSource(mediaStream);
         analyser = audioContext.createAnalyser();
         analyser.fftSize = 2048;
         monitorData = new Uint8Array(analyser.fftSize);
-        processorNode = audioContext.createScriptProcessor(4096, 1, 1);
         pcmChunks = [];
+        await createRecorderNode();
+        recording = true;
         sourceNode.connect(analyser);
         sourceNode.connect(processorNode);
         processorNode.connect(audioContext.destination);
-        processorNode.onaudioprocess = (event) => {
-          if (recording) pcmChunks.push(new Float32Array(event.inputBuffer.getChannelData(0)));
-        };
-        recording = true;
         startTime = Date.now();
         timerEl.textContent = '00:00';
         timerHandle = setInterval(updateTimer, 250);
@@ -673,15 +796,22 @@
         setStatus('recording', 'statusRecording');
         setHint('hintRecording');
       } catch (e) {
+        recording = false;
+        stopVisuals();
         setHint('hintError');
         setStatus('', 'statusFail');
         stopTracks();
+      } finally {
+        mainBtn.disabled = false;
       }
     }
 
-    function finishRecording() {
+    async function finishRecording() {
       recording = false;
+      mainBtn.disabled = true;
+      resetBtn.disabled = true;
       stopVisuals();
+      await flushRecorder();
       stopTracks();
       const merged = mergeFloat32(pcmChunks);
       if (!merged.length) {
@@ -689,6 +819,7 @@
         mainBtn.dataset.state = 'start';
         mainBtnText.textContent = t('mainStart');
         mainBtn.classList.remove('stop');
+        mainBtn.disabled = false;
         return;
       }
       recordingBlob = encodeWav(merged, sampleRate);
@@ -706,13 +837,14 @@
       mainBtn.dataset.state = 'again';
       mainBtnText.textContent = t('mainAgain');
       mainBtn.classList.remove('stop');
+      mainBtn.disabled = false;
       setStatus('ready', 'statusDone');
       setHint('hintDone');
     }
 
-    function toggleRecording() {
-      if (recording) finishRecording();
-      else startRecording();
+    async function toggleRecording() {
+      if (recording) await finishRecording();
+      else await startRecording();
     }
 
     function resetRecording() {
