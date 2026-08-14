@@ -375,10 +375,9 @@
       </div>
     </section>
 
-    <footer>Built for <a href="https://rhema.app" target="_blank" rel="noopener noreferrer" style="text-decoration: none; color: inherit; font-weight: bold;">Rhema</a></footer>
+    <footer>Designed by Chinh Anh at <a href="https://rhema.app" target="_blank" rel="noopener noreferrer" style="text-decoration: none; color: inherit; font-weight: bold;">Rhema</a></footer>
   </main>
 
-  <script src="https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js"></script>
   <script>
     const html = document.documentElement;
     const langBtn = document.getElementById('langBtn');
@@ -420,7 +419,6 @@
         hintNoData: 'Không có dữ liệu âm thanh. Hãy thử ghi lại.',
         hintError: 'Không mở được microphone. Hãy kiểm tra quyền truy cập rồi thử lại.',
         hintUnsupported: 'Trình duyệt này chưa hỗ trợ ghi âm web đầy đủ. Hãy dùng Chrome, Edge hoặc Safari mới.',
-        hintEncoderError: 'Không tải được bộ mã hóa âm thanh. Hãy kiểm tra kết nối mạng rồi tải lại trang.',
         hintShareCanceled: 'Bạn đã đóng bảng chia sẻ mà chưa gửi file.',
         mainStart: 'Bắt đầu ghi âm',
         mainStop: 'Dừng ghi âm',
@@ -430,7 +428,7 @@
         reset: 'Xóa bản ghi',
         noFile: 'Chưa có bản ghi',
         noFileMeta: 'Sau khi dừng ghi, file sẽ hiện ở đây.',
-        fileMetaSuffix: 'WAV mono · Rhema 48 kHz · 128 kbps',
+        fileMetaSuffix: 'WAV PCM mono · 16-bit',
         support: 'Trên điện thoại, nên bấm Share để gửi qua app khác. Trên máy tính, dùng Tải file WAV để lưu bản ghi.',
         themeDark: 'Dark',
         themeLight: 'Light'
@@ -454,7 +452,6 @@
         hintNoData: 'No audio data was captured. Please try again.',
         hintError: 'Microphone access failed. Please check permission and try again.',
         hintUnsupported: 'This browser does not fully support web recording. Please use a recent Chrome, Edge, or Safari.',
-        hintEncoderError: 'The audio encoder could not be loaded. Check your internet connection and reload the page.',
         hintShareCanceled: 'You closed the share sheet before sending the file.',
         mainStart: 'Start recording',
         mainStop: 'Stop recording',
@@ -464,7 +461,7 @@
         reset: 'Delete recording',
         noFile: 'No recording yet',
         noFileMeta: 'Your file will appear here after you stop recording.',
-        fileMetaSuffix: 'mono WAV · Rhema 48 kHz · 128 kbps',
+        fileMetaSuffix: 'mono PCM WAV · 16-bit',
         support: 'On phones, use Share to send the file to another app. On desktop, use Download WAV to save the recording.',
         themeDark: 'Dark',
         themeLight: 'Light'
@@ -486,8 +483,6 @@
     let recordingBlob = null;
     let recordingUrl = null;
     let sampleRate = 48000;
-    const RHEMA_SAMPLE_RATE = 48000;
-    const RHEMA_BIT_RATE = 128;
     let fileName = '';
     let currentStatusKey = 'statusReady';
     let currentHintKey = 'hintIdle';
@@ -583,49 +578,31 @@
       return result;
     }
 
-    function resampleLinear(samples, inputRate, outputRate) {
-      if (inputRate === outputRate) return samples;
-      const outputLength = Math.round(samples.length * outputRate / inputRate);
-      const output = new Float32Array(outputLength);
-      const ratio = inputRate / outputRate;
-
-      for (let i = 0; i < outputLength; i++) {
-        const position = i * ratio;
-        const left = Math.floor(position);
-        const right = Math.min(left + 1, samples.length - 1);
-        const fraction = position - left;
-        output[i] = samples[left] + (samples[right] - samples[left]) * fraction;
+    function encodeWav(samples, sr) {
+      const buffer = new ArrayBuffer(44 + samples.length * 2);
+      const view = new DataView(buffer);
+      const writeString = (offset, string) => {
+        for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i));
+      };
+      writeString(0, 'RIFF');
+      view.setUint32(4, 36 + samples.length * 2, true);
+      writeString(8, 'WAVE');
+      writeString(12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, 1, true);
+      view.setUint32(24, sr, true);
+      view.setUint32(28, sr * 2, true);
+      view.setUint16(32, 2, true);
+      view.setUint16(34, 16, true);
+      writeString(36, 'data');
+      view.setUint32(40, samples.length * 2, true);
+      let offset = 44;
+      for (let i = 0; i < samples.length; i++, offset += 2) {
+        const value = Math.max(-1, Math.min(1, samples[i]));
+        view.setInt16(offset, value < 0 ? value * 0x8000 : value * 0x7fff, true);
       }
-
-      return output;
-    }
-
-    function float32ToInt16(samples) {
-      const output = new Int16Array(samples.length);
-      for (let i = 0; i < samples.length; i++) {
-        const sample = Math.max(-1, Math.min(1, samples[i]));
-        output[i] = sample < 0 ? sample * 0x8000 : sample * 0x7fff;
-      }
-      return output;
-    }
-
-    // Rhema stores MP3 mono 128 kbps at 48 kHz in files whose required name ends in .wav.
-    function encodeRhemaRecording(samples) {
-      if (!window.lamejs) throw new Error('LAME encoder is unavailable');
-
-      const encoder = new window.lamejs.Mp3Encoder(1, RHEMA_SAMPLE_RATE, RHEMA_BIT_RATE);
-      const pcm = float32ToInt16(samples);
-      const chunks = [];
-      const blockSize = 1152;
-
-      for (let offset = 0; offset < pcm.length; offset += blockSize) {
-        const encoded = encoder.encodeBuffer(pcm.subarray(offset, offset + blockSize));
-        if (encoded.length) chunks.push(new Uint8Array(encoded));
-      }
-
-      const flushed = encoder.flush();
-      if (flushed.length) chunks.push(new Uint8Array(flushed));
-      return new Blob(chunks, { type: 'audio/mpeg' });
+      return new Blob([buffer], { type: 'audio/wav' });
     }
 
     function stopTracks() {
@@ -714,17 +691,7 @@
         mainBtn.classList.remove('stop');
         return;
       }
-      try {
-        const rhemaSamples = resampleLinear(merged, sampleRate, RHEMA_SAMPLE_RATE);
-        recordingBlob = encodeRhemaRecording(rhemaSamples);
-      } catch (error) {
-        mainBtn.dataset.state = 'start';
-        mainBtnText.textContent = t('mainStart');
-        mainBtn.classList.remove('stop');
-        setStatus('', 'statusFail');
-        setHint('hintEncoderError');
-        return;
-      }
+      recordingBlob = encodeWav(merged, sampleRate);
       recordingUrl = URL.createObjectURL(recordingBlob);
       const now = new Date();
       fileName = `recording-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}.wav`;
@@ -801,11 +768,7 @@
       renderThemeIcon();
     });
 
-    if (!window.lamejs) {
-      mainBtn.disabled = true;
-      setHint('hintEncoderError');
-      setStatus('', 'statusUnsupported');
-    } else if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !(window.AudioContext || window.webkitAudioContext)) {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !(window.AudioContext || window.webkitAudioContext)) {
       mainBtn.disabled = true;
       setHint('hintUnsupported');
       setStatus('', 'statusUnsupported');
